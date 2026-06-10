@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Connection, PublicKey, Transaction, SystemProgram } from '@solana/web3.js';
 
-// Dirección simulada de la tesorería de la preventa
+// Dirección simulada de la tesorería de la preventa (Aprobada para pruebas de sintaxis)
 const PRESALE_WALLET = new PublicKey('2NjhoA5TKiVKja9Gq8iPht5ya5Ho8yo2AEUbv37aGDTa');
+
+// IMAGEN DE LOGO OFICIAL (Sacada de 𝕏.com/AuraGoldARG)
+const LOGO_AURA_GOLD = "https://pbs.twimg.com/profile_images/2033415962737639425/Qynt9rO0_400x400.jpg";
 
 export default function App() {
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
@@ -155,13 +158,16 @@ export default function App() {
         )}
       </div>
 
-      {/* ENCABEZADO / NAVBAR */}
+      {/* ENCABEZADO / NAVBAR ACTUALIZADO CON LOGO OFICIAL */}
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 40px', maxWidth: '1200px', margin: '0 auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#d97706', display: 'flex', justifyContent: 'center', alignItems: 'center', fontWeight: 'bold', fontSize: '20px', color: '#060b13' }}>
-            A
-          </div>
-          <span style={{ fontWeight: 'bold', fontSize: '22px', letterSpacing: '1px', color: '#fbbf24' }}>AURA GOLD</span>
+          {/* NUEVO LOGO CON IMAGEN DE 𝕏 */}
+          <img 
+            src={LOGO_AURA_GOLD} 
+            alt="Logo Aura Gold" 
+            style={{ width: '45px', height: '45px', borderRadius: '50%', border: '2px solid #fbbf24', boxSizing: 'border-box' }}
+          />
+          <span style={{ fontWeight: '900', fontSize: '24px', letterSpacing: '1px', color: '#fbbf24' }}>AURA GOLD</span>
         </div>
         
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
@@ -176,7 +182,7 @@ export default function App() {
 
       {/* CONTENIDO PRINCIPAL */}
       <main style={{ maxWidth: '600px', margin: '60px auto', padding: '0 20px', textAlign: 'center' }}>
-        <h1 style={{ fontSize: '36px', fontWeight: 'bold', marginBottom: '10px' }}>
+        <h1 style={{ fontSize: '36px', fontWeight: '900', marginBottom: '10px' }}>
           Portal Oficial de Preventa <span style={{ color: '#fbbf24' }}>Aura Gold (ARG)</span>
         </h1>
         <p style={{ color: '#94a3b8', fontSize: '16px', marginBottom: '40px' }}>
@@ -222,6 +228,20 @@ export default function App() {
           <button onClick={handlePurchase} style={{ width: '100%', backgroundColor: '#d97706', color: '#ffffff', border: 'none', padding: '16px', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.5px', transition: '0.2s' }} onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#b45309'} onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#d97706'}>
             Adquirir Tokens ARG
           </button>
+          
+          {/* NUEVA RECOMENDACIÓN DE WALLET PHANTOM CON ENLACE */}
+          <div style={{ marginTop: '20px', backgroundColor: '#0d192d', border: '1px solid #1e293b', padding: '15px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '12px', textAlign: 'left' }}>
+            <span style={{ fontSize: '24px' }}>🛡️</span>
+            <div>
+                <p style={{ margin: 0, fontSize: '13px', color: '#ffffff', fontWeight: 'bold' }}>Recomendamos usar Phantom Wallet</p>
+                <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#94a3b8' }}>
+                    Para una experiencia segura en Solana. 
+                    <a href="https://phantom.app/" target="_blank" rel="noreferrer" style={{ color: '#a78bfa', textDecoration: 'none', fontWeight: 'bold', marginLeft: '5px' }}>
+                        Descárgala aquí ➔
+                    </a>
+                </p>
+            </div>
+          </div>
         </div>
 
         {/* PIE DE PÁGINA CON ENLACES OFICIALES */}
