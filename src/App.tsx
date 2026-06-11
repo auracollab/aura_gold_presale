@@ -106,8 +106,8 @@ function PresaleContent() {
 
       alert(`Iniciando solicitud para adquirir ${argAmount} ARG. Se abrirá tu billetera seleccionada para autorizar el envío de ${parsedPay} SOL.`);
 
-      // Conexión directa al nodo oficial de Solana Mainnet
-      const connection = new Connection('https://api.mainnet-beta.solana.com', 'confirmed');
+      // CORRECCIÓN: Conexión directa a través del nodo de Ankr (Libre de bloqueos 403 de Netlify)
+      const connection = new Connection('https://rpc.ankr.com/solana', 'confirmed');
 
       // Creamos la transferencia real del sistema de lamports
       const transaction = new Transaction().add(
@@ -242,7 +242,9 @@ function PresaleContent() {
 // COMPONENTE PRINCIPAL: Configura los proveedores globales de Solana
 export default function App() {
   const network = WalletAdapterNetwork.Mainnet;
-  const endpoint = 'https://api.mainnet-beta.solana.com';
+  
+  // CORRECCIÓN: Endpoint global de Ankr para evitar el bloqueo 403 de Netlify
+  const endpoint = 'https://rpc.ankr.com/solana';
 
   // Configurar las billeteras físicas soportadas
   const wallets = useMemo(
@@ -254,7 +256,6 @@ export default function App() {
     []
   );
 
-  // SE REMOVIÓ EL AUTO-CONNECT PARA EVITAR BUCLES DE SELECCIÓN ERRÓNEOS
   return (
     <ConnectionProvider endpoint={endpoint}>
       <WalletProvider wallets={wallets}>
