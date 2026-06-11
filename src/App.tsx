@@ -1,5 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Connection, PublicKey, Transaction, SystemProgram } from '@solana/web3.js';
+
+// Importaciones del adaptador oficial de billeteras de Solana
+import { ConnectionProvider, WalletProvider, useWallet } from '@solana/wallet-adapter-react';
+import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
+import { PhantomWalletAdapter, SolflareWalletAdapter, TorusWalletAdapter } from '@solana/wallet-adapter-wallets';
+import { WalletModalProvider, WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+
+// Importar los estilos del modal oficial (Netlify los compilará automáticamente)
+import '@solana/wallet-adapter-react-ui/styles.css';
 
 // Dirección real de la tesorería de la preventa (Mainnet)
 const PRESALE_WALLET = new PublicKey('2NjhoA5TKiVKja9Gq8iPht5ya5Ho8yo2AEUbv37aGDTa');
@@ -7,19 +16,20 @@ const PRESALE_WALLET = new PublicKey('2NjhoA5TKiVKja9Gq8iPht5ya5Ho8yo2AEUbv37aGD
 // IMAGEN DE LOGO OFICIAL
 const LOGO_AURA_GOLD = "https://pbs.twimg.com/profile_images/2033415962737639425/Qynt9rO0_400x400.jpg";
 
-export default function App() {
-  const [walletAddress, setWalletAddress] = useState<string | null>(null);
+// Componente Interno que contiene la lógica de la dApp
+function PresaleContent() {
+  const { publicKey, sendTransaction, connected } = useWallet();
   const [solPriceUsd, setSolPriceUsd] = useState<number>(140); // Valor base por si la API tarda
   const [loadingPrice, setLoadingPrice] = useState<boolean>(true);
   
   // Estados de los campos de compra
-  const [currency, setCurrency] = useState<'USDT' | 'SOL'>('SOL'); // Predeterminado en SOL para Mainnet
+  const [currency, setCurrency] = useState<'USDT' | 'SOL'>('SOL'); 
   const [argAmount, setArgAmount] = useState<string>('10000');
   const [payAmount, setPayAmount] = useState<string>('100');
 
   const ARG_PRICE_USD = 0.01; // Precio fijo por token ARG en la preventa
 
-  // 1. Obtener el precio de Solana en tiempo real desde la API de CoinGecko
+  // 1. Obtener el precio de Solana en tiempo real
   useEffect(() => {
     async function fetchSolPrice() {
       try {
@@ -31,13 +41,13 @@ export default function App() {
       } catch (error) {
         console.error("Error consultando el precio de SOL en vivo:", error);
       } finally {
-        loadingPrice && setLoadingPrice(false);
+        setLoadingPrice(false);
       }
     }
     fetchSolPrice();
     const interval = setInterval(fetchSolPrice, 60000);
     return () => clearInterval(interval);
-  }, [loadingPrice]);
+  }, []);
 
   // 2. Recalcular montos de conversión de manera bidireccional
   useEffect(() => {
@@ -75,27 +85,11 @@ export default function App() {
     }
   };
 
-  // 3. Conexión real con Phantom / Brave Wallet
-  const connectWallet = async () => {
-    try {
-      const { solana } = window as any;
-      if (!solana) {
-        alert('Por favor instala una extensión de billetera como Phantom Wallet.');
-        return;
-      }
-      const response = await solana.connect();
-      setWalletAddress(response.publicKey.toString());
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  // 4. Procesamiento real de transacciones en Mainnet-beta
+  // 3. Procesamiento real de transacciones utilizando el adaptador oficial
   const handlePurchase = async () => {
     try {
-      const { solana } = window as any;
-      if (!walletAddress || !solana) {
-        alert('Por favor, conecta tu billetera primero.');
+      if (!connected || !publicKey) {
+        alert('Por favor, conecta tu billetera primero usando el botón superior.');
         return;
       }
 
@@ -110,29 +104,22 @@ export default function App() {
         return;
       }
 
-      alert(`Iniciando solicitud para adquirir ${argAmount} ARG. Se abrirá tu billetera para autorizar el envío de ${parsedPay} SOL.`);
+      alert(`Iniciando solicitud para adquirir ${argAmount} ARG. Se abrirá tu billetera seleccionada para autorizar el envío de ${parsedPay} SOL.`);
 
-      // Conexión directa al nodo oficial de Solana Mainnet (Red Real)
+      // Conexión directa al nodo oficial de Solana Mainnet
       const connection = new Connection('https://api.mainnet-beta.solana.com', 'confirmed');
-      const fromPubkey = new PublicKey(walletAddress);
 
       // Creamos la transferencia real del sistema de lamports
       const transaction = new Transaction().add(
         SystemProgram.transfer({
-          fromPubkey,
+          fromPubkey: publicKey,
           toPubkey: PRESALE_WALLET,
           lamports: Math.floor(parsedPay * 1_000_000_000),
         })
       );
 
-      transaction.feePayer = fromPubkey;
-      
-      // Consultamos el bloque en tiempo real directamente de la red principal
-      const { blockhash } = await connection.getLatestBlockhash();
-      transaction.recentBlockhash = blockhash;
-
-      // Solicitamos la firma y el envío a la red real a través de Phantom
-      const { signature } = await solana.signAndSendTransaction(transaction);
+      // Enviamos la transacción delegando la firma de forma segura al adaptador de la wallet activa
+      const signature = await sendTransaction(transaction, connection);
 
       if (signature) {
         alert(`🎉 ¡RESERVA EXITOSA!\n\nTu pago de ${parsedPay} SOL fue procesado en Mainnet.\nID de Operación (Firma): ${signature.slice(0, 8)}...\n\nTu billetera ha sido registrada para recibir ${argAmount} ARG en la distribución de la Fase 1.`);
@@ -168,10 +155,9 @@ export default function App() {
           <span style={{ fontWeight: '900', fontSize: '24px', letterSpacing: '1px', color: '#fbbf24' }}>AURA GOLD</span>
         </div>
         
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-          <button onClick={connectWallet} style={{ backgroundColor: walletAddress ? '#10b981' : '#fbbf24', color: '#060b13', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', transition: '0.3s' }}>
-            {walletAddress ? `Conectado: ${walletAddress.slice(0, 4)}...${walletAddress.slice(-4)}` : 'Conectar Billetera'}
-          </button>
+        <div>
+          {/* BOTÓN OFICIAL MULTI-BILLETERA (Maneja todo el diseño e interfaces de forma nativa) */}
+          <WalletMultiButton style={{ backgroundColor: connected ? '#10b981' : '#fbbf24', color: '#060b13', fontWeight: 'bold', borderRadius: '8px', fontFamily: 'sans-serif' }} />
         </div>
       </header>
 
@@ -224,9 +210,9 @@ export default function App() {
             Adquirir Tokens ARG
           </button>
 
-          {/* 📢 CUADRO DEL CONTRATO SOCIAL (REGLAS DE DISTRIBUCIÓN FASE 1) */}
+          {/* CUADRO DEL CONTRATO SOCIAL */}
           <div style={{ marginTop: '24px', backgroundColor: '#0d192d', border: '1px solid #1d4ed8', padding: '20px', borderRadius: '12px', textAlign: 'left' }}>
-            <h3 style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#38bdf8', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <h3 style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#38bdf8', fontWeight: 'bold' }}>
               📢 Reglas de la Fase 1 y Distribución de Fondos
             </h3>
             <p style={{ margin: 0, fontSize: '12px', color: '#cbd5e1', lineHeight: '1.6' }}>
@@ -242,7 +228,6 @@ export default function App() {
         <footer style={{ marginTop: '50px', borderTop: '1px solid #1e293b', padding: '20px 0', display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <p style={{ fontSize: '14px', color: '#64748b', margin: 0 }}>MINT ADDRESS (CONTRATO OFICIAL DEL TOKEN):</p>
           <code style={{ fontSize: '12px', color: '#fbbf24', wordBreak: 'break-all', display: 'block', padding: '0 20px' }}>22gYFgCNLcyRrLhrMtBSq3uwRhvfCA7wUGzG8QzCycqc</code>
-          
           <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginTop: '15px' }}>
             <a href="https://x.com/AuraGoldARG" target="_blank" rel="noreferrer" style={{ color: '#38bdf8', textDecoration: 'none', fontSize: '14px' }}>
               𝕏 / Twitter Oficial
@@ -251,5 +236,31 @@ export default function App() {
         </footer>
       </main>
     </div>
+  );
+}
+
+// COMPONENTE PRINCIPAL: Configura los proveedores globales de Solana
+export default function App() {
+  const network = WalletAdapterNetwork.Mainnet;
+  const endpoint = 'https://api.mainnet-beta.solana.com';
+
+  // Configurar las billeteras físicas soportadas por el adaptador
+  const wallets = useMemo(
+    () => [
+      new PhantomWalletAdapter(),
+      new SolflareWalletAdapter(),
+      new TorusWalletAdapter(),
+    ],
+    []
+  );
+
+  return (
+    <ConnectionProvider endpoint={endpoint}>
+      <WalletProvider wallets={wallets} autoConnect>
+        <WalletModalProvider>
+          <PresaleContent />
+        </WalletModalProvider>
+      </WalletProvider>
+    </ConnectionProvider>
   );
 }
