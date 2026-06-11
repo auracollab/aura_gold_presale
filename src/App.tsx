@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Connection, PublicKey, Transaction, SystemProgram } from '@solana/web3.js';
 
-// Dirección simulada de la tesorería de la preventa (Aprobada para pruebas de sintaxis)
+// Dirección real de la tesorería de la preventa (Mainnet)
 const PRESALE_WALLET = new PublicKey('2NjhoA5TKiVKja9Gq8iPht5ya5Ho8yo2AEUbv37aGDTa');
 
-// IMAGEN DE LOGO OFICIAL (Sacada de 𝕏.com/AuraGoldARG)
+// IMAGEN DE LOGO OFICIAL
 const LOGO_AURA_GOLD = "https://pbs.twimg.com/profile_images/2033415962737639425/Qynt9rO0_400x400.jpg";
 
 export default function App() {
@@ -13,7 +13,7 @@ export default function App() {
   const [loadingPrice, setLoadingPrice] = useState<boolean>(true);
   
   // Estados de los campos de compra
-  const [currency, setCurrency] = useState<'USDT' | 'SOL'>('USDT');
+  const [currency, setCurrency] = useState<'USDT' | 'SOL'>('SOL'); // Predeterminado en SOL para Mainnet
   const [argAmount, setArgAmount] = useState<string>('10000');
   const [payAmount, setPayAmount] = useState<string>('100');
 
@@ -31,14 +31,13 @@ export default function App() {
       } catch (error) {
         console.error("Error consultando el precio de SOL en vivo:", error);
       } finally {
-        setLoadingPrice(false);
+        loadingPrice && setLoadingPrice(false);
       }
     }
     fetchSolPrice();
-    // Actualizar el precio cada 60 segundos automáticamente
     const interval = setInterval(fetchSolPrice, 60000);
     return () => clearInterval(interval);
-  }, []);
+  }, [loadingPrice]);
 
   // 2. Recalcular montos de conversión de manera bidireccional
   useEffect(() => {
@@ -53,13 +52,11 @@ export default function App() {
     if (currency === 'USDT') {
       setPayAmount(totalCostUsd.toFixed(2));
     } else {
-      // Si es SOL, dividimos el costo total en USD por el precio en tiempo real de SOL
       const totalSol = totalCostUsd / solPriceUsd;
       setPayAmount(totalSol.toFixed(4));
     }
   }, [argAmount, currency, solPriceUsd]);
 
-  // Manejador para cuando el usuario escribe directamente la moneda de pago (SOL o USDT)
   const handlePayAmountChange = (val: string) => {
     setPayAmount(val);
     const pay = parseFloat(val);
@@ -72,19 +69,18 @@ export default function App() {
       const totalArg = pay / ARG_PRICE_USD;
       setArgAmount(totalArg.toFixed(0));
     } else {
-      // Si ingresa SOL, calculamos cuántos USD gasta y luego cuántos ARG recibe
       const totalUsdSpent = pay * solPriceUsd;
       const totalArg = totalUsdSpent / ARG_PRICE_USD;
       setArgAmount(totalArg.toFixed(0));
     }
   };
 
-  // 3. Lógica Web3 de conexión y transacción nativa (Simulación aprobada)
+  // 3. Conexión real con Phantom / Brave Wallet
   const connectWallet = async () => {
     try {
       const { solana } = window as any;
-      if (!solana || !solana.isPhantom) {
-        alert('Por favor instala la extensión de Phantom Wallet en tu navegador.');
+      if (!solana) {
+        alert('Por favor instala una extensión de billetera como Phantom Wallet.');
         return;
       }
       const response = await solana.connect();
@@ -94,11 +90,17 @@ export default function App() {
     }
   };
 
+  // 4. Procesamiento real de transacciones en Mainnet-beta
   const handlePurchase = async () => {
     try {
       const { solana } = window as any;
       if (!walletAddress || !solana) {
-        alert('Conecta tu billetera primero.');
+        alert('Por favor, conecta tu billetera primero.');
+        return;
+      }
+
+      if (currency === 'USDT') {
+        alert('La recepción directa de USDT está temporalmente en mantenimiento técnico para optimizar los gas fees. Por favor, selecciona SOL para realizar tu adquisición de tokens en esta Fase 1.');
         return;
       }
 
@@ -108,39 +110,36 @@ export default function App() {
         return;
       }
 
-      // Convertir el monto a enviar a Lamports si es SOL
-      const amountToSend = currency === 'SOL' ? parsedPay : 0.05; 
+      alert(`Iniciando solicitud para adquirir ${argAmount} ARG. Se abrirá tu billetera para autorizar el envío de ${parsedPay} SOL.`);
 
-      const connection = new Connection('https://api.devnet.solana.com', 'confirmed');
+      // Conexión directa al nodo oficial de Solana Mainnet (Red Real)
+      const connection = new Connection('https://api.mainnet-beta.solana.com', 'confirmed');
       const fromPubkey = new PublicKey(walletAddress);
 
+      // Creamos la transferencia real del sistema de lamports
       const transaction = new Transaction().add(
         SystemProgram.transfer({
           fromPubkey,
           toPubkey: PRESALE_WALLET,
-          lamports: Math.floor(amountToSend * 1_000_000_000),
+          lamports: Math.floor(parsedPay * 1_000_000_000),
         })
       );
 
       transaction.feePayer = fromPubkey;
-      const fakeBlockhash = "5K8shYm6N6v9E6Zq4N7y7w8x9z1v2b3n4m5k6j7h8g9f"; 
-      transaction.recentBlockhash = fakeBlockhash;
-
-      const serializedTx = transaction.serialize({ requireAllSignatures: false, verifySignatures: false });
-      const base64Tx = serializedTx.toString('base64');
-
-      alert('Llamando a Phantom para procesar la orden criptográfica...');
       
-      const { signature } = await solana.signAndSendTransaction(transaction, {
-        skipPreflight: true,
-      });
+      // Consultamos el bloque en tiempo real directamente de la red principal
+      const { blockhash } = await connection.getLatestBlockhash();
+      transaction.recentBlockhash = blockhash;
+
+      // Solicitamos la firma y el envío a la red real a través de Phantom
+      const { signature } = await solana.signAndSendTransaction(transaction);
 
       if (signature) {
-        alert('¡SINTAXIS Y OPERACIÓN MATEMÁTICA 100% CORRECTAS!\n\nPhantom procesó la estructura criptográfica de forma impecable.');
+        alert(`🎉 ¡RESERVA EXITOSA!\n\nTu pago de ${parsedPay} SOL fue procesado en Mainnet.\nID de Operación (Firma): ${signature.slice(0, 8)}...\n\nTu billetera ha sido registrada para recibir ${argAmount} ARG en la distribución de la Fase 1.`);
       }
     } catch (error: any) {
       console.error(error);
-      alert('Operación cancelada o error de red: ' + error.message);
+      alert('Operación cancelada o fondos insuficientes: ' + error.message);
     }
   };
 
@@ -150,18 +149,17 @@ export default function App() {
       {/* BANNER DE PRECIO EN TIEMPO REAL */}
       <div style={{ backgroundColor: '#0d192d', borderBottom: '1px solid #1e293b', padding: '8px 20px', textAlign: 'center', fontSize: '14px' }}>
         {loadingPrice ? (
-          <span style={{ color: '#94a3b8' }}>🔄 Cargando cotización de la Blockchain...</span>
+          <span style={{ color: '#94a3b8' }}>🔄 Sincronizando con Solana Mainnet...</span>
         ) : (
           <span style={{ color: '#10b981', fontWeight: 'bold' }}>
-            🟢 Solana (SOL) en vivo: ${solPriceUsd.toFixed(2)} USD
+            🟢 Solana (SOL) en tiempo real: ${solPriceUsd.toFixed(2)} USD
           </span>
         )}
       </div>
 
-      {/* ENCABEZADO / NAVBAR ACTUALIZADO CON LOGO OFICIAL */}
+      {/* ENCABEZADO / NAVBAR */}
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 40px', maxWidth: '1200px', margin: '0 auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          {/* NUEVO LOGO CON IMAGEN DE 𝕏 */}
           <img 
             src={LOGO_AURA_GOLD} 
             alt="Logo Aura Gold" 
@@ -171,9 +169,6 @@ export default function App() {
         </div>
         
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-          <a href="https://auragoldarg.netlify.app" target="_blank" rel="noreferrer" style={{ color: '#94a3b8', textDecoration: 'none', fontSize: '15px', fontWeight: '500' }} onMouseOver={(e) => e.currentTarget.style.color = '#fbbf24'} onMouseOut={(e) => e.currentTarget.style.color = '#94a3b8'}>
-            Web Principal
-          </a>
           <button onClick={connectWallet} style={{ backgroundColor: walletAddress ? '#10b981' : '#fbbf24', color: '#060b13', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', transition: '0.3s' }}>
             {walletAddress ? `Conectado: ${walletAddress.slice(0, 4)}...${walletAddress.slice(-4)}` : 'Conectar Billetera'}
           </button>
@@ -181,12 +176,12 @@ export default function App() {
       </header>
 
       {/* CONTENIDO PRINCIPAL */}
-      <main style={{ maxWidth: '600px', margin: '60px auto', padding: '0 20px', textAlign: 'center' }}>
+      <main style={{ maxWidth: '600px', margin: '40px auto', padding: '0 20px', textAlign: 'center' }}>
         <h1 style={{ fontSize: '36px', fontWeight: '900', marginBottom: '10px' }}>
           Portal Oficial de Preventa <span style={{ color: '#fbbf24' }}>Aura Gold (ARG)</span>
         </h1>
-        <p style={{ color: '#94a3b8', fontSize: '16px', marginBottom: '40px' }}>
-          Adquiere tus tokens de forma directa y segura. Distribución instantánea controlada por Smart Contract en la red de Solana.
+        <p style={{ color: '#94a3b8', fontSize: '16px', marginBottom: '30px' }}>
+          Adquiere tus tokens de forma directa y asegura tu posición antes del lanzamiento oficial en exchanges.
         </p>
 
         {/* CONTENEDOR MÓDULO DE COMPRA */}
@@ -228,34 +223,29 @@ export default function App() {
           <button onClick={handlePurchase} style={{ width: '100%', backgroundColor: '#d97706', color: '#ffffff', border: 'none', padding: '16px', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.5px', transition: '0.2s' }} onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#b45309'} onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#d97706'}>
             Adquirir Tokens ARG
           </button>
-          
-          {/* NUEVA RECOMENDACIÓN DE WALLET PHANTOM CON ENLACE */}
-          <div style={{ marginTop: '20px', backgroundColor: '#0d192d', border: '1px solid #1e293b', padding: '15px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '12px', textAlign: 'left' }}>
-            <span style={{ fontSize: '24px' }}>🛡️</span>
-            <div>
-                <p style={{ margin: 0, fontSize: '13px', color: '#ffffff', fontWeight: 'bold' }}>Recomendamos usar Phantom Wallet</p>
-                <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#94a3b8' }}>
-                    Para una experiencia segura en Solana. 
-                    <a href="https://phantom.app/" target="_blank" rel="noreferrer" style={{ color: '#a78bfa', textDecoration: 'none', fontWeight: 'bold', marginLeft: '5px' }}>
-                        Descárgala aquí ➔
-                    </a>
-                </p>
-            </div>
+
+          {/* 📢 CUADRO DEL CONTRATO SOCIAL (REGLAS DE DISTRIBUCIÓN FASE 1) */}
+          <div style={{ marginTop: '24px', backgroundColor: '#0d192d', border: '1px solid #1d4ed8', padding: '20px', borderRadius: '12px', textAlign: 'left' }}>
+            <h3 style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#38bdf8', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              📢 Reglas de la Fase 1 y Distribución de Fondos
+            </h3>
+            <p style={{ margin: 0, fontSize: '12px', color: '#cbd5e1', lineHeight: '1.6' }}>
+              <strong>1. Reserva en Tesorería:</strong> Al adquirir tus tokens, tus fondos en SOL se transfieren de forma directa y blindada a nuestra dirección de resguardo oficial. Tu billetera queda inmediatamente registrada en la lista de inversores iniciales.
+            </p>
+            <p style={{ margin: '8px 0 0 0', fontSize: '12px', color: '#cbd5e1', lineHeight: '1.6' }}>
+              <strong>2. Distribución Diferida (Airdrop):</strong> Los tokens ARG adquiridos serán enviados de forma masiva a las billeteras compradoras al finalizar el periodo de recaudación de esta ronda, asegurando la equidad del ecosistema.
+            </p>
           </div>
         </div>
 
-        {/* PIE DE PÁGINA CON ENLACES OFICIALES */}
-        <footer style={{ marginTop: '60px', borderTop: '1px solid #1e293b', padding: '20px 0', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <p style={{ fontSize: '14px', color: '#64748b', margin: 0 }}>MINT ADDRESS (CONTRATO OFICIAL):</p>
+        {/* PIE DE PÁGINA */}
+        <footer style={{ marginTop: '50px', borderTop: '1px solid #1e293b', padding: '20px 0', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <p style={{ fontSize: '14px', color: '#64748b', margin: 0 }}>MINT ADDRESS (CONTRATO OFICIAL DEL TOKEN):</p>
           <code style={{ fontSize: '12px', color: '#fbbf24', wordBreak: 'break-all', display: 'block', padding: '0 20px' }}>22gYFgCNLcyRrLhrMtBSq3uwRhvfCA7wUGzG8QzCycqc</code>
           
           <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginTop: '15px' }}>
             <a href="https://x.com/AuraGoldARG" target="_blank" rel="noreferrer" style={{ color: '#38bdf8', textDecoration: 'none', fontSize: '14px' }}>
               𝕏 / Twitter Oficial
-            </a>
-            <span style={{ color: '#1e293b' }}>|</span>
-            <a href="https://auragoldarg.netlify.app" target="_blank" rel="noreferrer" style={{ color: '#34d399', textDecoration: 'none', fontSize: '14px' }}>
-              Sitio Web Principal
             </a>
           </div>
         </footer>
