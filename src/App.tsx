@@ -7,7 +7,7 @@ import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
 import { PhantomWalletAdapter, SolflareWalletAdapter, TorusWalletAdapter } from '@solana/wallet-adapter-wallets';
 import { WalletModalProvider, WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 
-// Importar los estilos del modal oficial (Netlify los compilará automáticamente)
+// Importar los estilos del modal oficial
 import '@solana/wallet-adapter-react-ui/styles.css';
 
 // Dirección real de la tesorería de la preventa (Mainnet)
@@ -156,7 +156,7 @@ function PresaleContent() {
         </div>
         
         <div>
-          {/* BOTÓN OFICIAL MULTI-BILLETERA (Maneja todo el diseño e interfaces de forma nativa) */}
+          {/* BOTÓN OFICIAL MULTI-BILLETERA */}
           <WalletMultiButton style={{ backgroundColor: connected ? '#10b981' : '#fbbf24', color: '#060b13', fontWeight: 'bold', borderRadius: '8px', fontFamily: 'sans-serif' }} />
         </div>
       </header>
@@ -244,7 +244,7 @@ export default function App() {
   const network = WalletAdapterNetwork.Mainnet;
   const endpoint = 'https://api.mainnet-beta.solana.com';
 
-  // Configurar las billeteras físicas soportadas por el adaptador
+  // Configurar las billeteras físicas soportadas
   const wallets = useMemo(
     () => [
       new PhantomWalletAdapter(),
@@ -254,9 +254,10 @@ export default function App() {
     []
   );
 
+  // SE REMOVIÓ EL AUTO-CONNECT PARA EVITAR BUCLES DE SELECCIÓN ERRÓNEOS
   return (
     <ConnectionProvider endpoint={endpoint}>
-      <WalletProvider wallets={wallets} autoConnect>
+      <WalletProvider wallets={wallets}>
         <WalletModalProvider>
           <PresaleContent />
         </WalletModalProvider>
