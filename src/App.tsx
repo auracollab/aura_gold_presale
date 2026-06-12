@@ -5,9 +5,9 @@ import { Connection, PublicKey, Transaction, SystemProgram } from '@solana/web3.
 import { ConnectionProvider, WalletProvider, useWallet } from '@solana/wallet-adapter-react';
 import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
 import { PhantomWalletAdapter, SolflareWalletAdapter, TorusWalletAdapter } from '@solana/wallet-adapter-wallets';
-import { WalletModalProvider, useWalletModal } from '@solana/wallet-adapter-react-ui';
+import { WalletModalProvider, WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 
-// Importar los estilos del modal oficial
+// Importar los estilos del modal oficial de Solana
 import '@solana/wallet-adapter-react-ui/styles.css';
 
 // Dirección real de la tesorería de la preventa (Mainnet)
@@ -16,24 +16,20 @@ const PRESALE_WALLET = new PublicKey('2NjhoA5TKiVKja9Gq8iPht5ya5Ho8yo2AEUbv37aGD
 // IMAGEN DE LOGO OFICIAL
 const LOGO_AURA_GOLD = "https://pbs.twimg.com/profile_images/2033415962737639425/Qynt9rO0_400x400.jpg";
 
-// Componente Interno que contiene la lógica de la dApp
+// Componente Interno con la lógica de negocio y UI
 function PresaleContent() {
-  const { publicKey, sendTransaction, connected, disconnect } = useWallet();
-  const { setVisible } = useWalletModal(); // Controla la apertura manual de la lista de wallets
-  const [solPriceUsd, setSolPriceUsd] = useState<number>(140); 
+  const { publicKey, sendTransaction, connected, disconnect, select } = useWallet();
+  const [solPriceUsd, setSolPriceUsd] = useState<number>(140); // Precio base por defecto
   const [loadingPrice, setLoadingPrice] = useState<boolean>(true);
   
-  // Estado para controlar el menú desplegable del botón de la wallet
-  const [showDropdown, setShowDropdown] = useState<boolean>(false);
-
   // Estados de los campos de compra
   const [currency, setCurrency] = useState<'USDT' | 'SOL'>('SOL'); 
   const [argAmount, setArgAmount] = useState<string>('10000');
   const [payAmount, setPayAmount] = useState<string>('100');
 
-  const ARG_PRICE_USD = 0.01; 
+  const ARG_PRICE_USD = 0.01; // Precio fijo por token ARG
 
-  // 1. Obtener el precio de Solana en tiempo real
+  // 1. Obtener el precio de Solana en tiempo real (Coingecko)
   useEffect(() => {
     async function fetchSolPrice() {
       try {
@@ -60,7 +56,9 @@ function PresaleContent() {
       setPayAmount('');
       return;
     }
+
     const totalCostUsd = arg * ARG_PRICE_USD;
+
     if (currency === 'USDT') {
       setPayAmount(totalCostUsd.toFixed(2));
     } else {
@@ -76,6 +74,7 @@ function PresaleContent() {
       setArgAmount('');
       return;
     }
+
     if (currency === 'USDT') {
       const totalArg = pay / ARG_PRICE_USD;
       setArgAmount(totalArg.toFixed(0));
@@ -86,17 +85,19 @@ function PresaleContent() {
     }
   };
 
-  // 3. Procesamiento real de transacciones utilizando el adaptador oficial
+  // 3. Procesamiento seguro de transacciones en Mainnet vía Ankr RPC Node
   const handlePurchase = async () => {
     try {
       if (!connected || !publicKey) {
         alert('Por favor, conecta tu billetera primero usando el botón superior.');
         return;
       }
+
       if (currency === 'USDT') {
         alert('La recepción directa de USDT está temporalmente en mantenimiento técnico para optimizar los gas fees. Por favor, selecciona SOL para realizar tu adquisición de tokens en esta Fase 1.');
         return;
       }
+
       const parsedPay = parseFloat(payAmount);
       if (isNaN(parsedPay) || parsedPay <= 0) {
         alert('Monto de compra inválido.');
@@ -105,6 +106,7 @@ function PresaleContent() {
 
       alert(`Iniciando solicitud para adquirir ${argAmount} ARG. Se abrirá tu billetera seleccionada para autorizar el envío de ${parsedPay} SOL.`);
 
+      // Endpoint inmune al error 403 de Netlify
       const connection = new Connection('https://rpc.ankr.com/solana', 'confirmed');
 
       const transaction = new Transaction().add(
@@ -126,27 +128,14 @@ function PresaleContent() {
     }
   };
 
-  // Funciones manuales para controlar la wallet
-  const handleConnectClick = () => {
+  // 4. Hook de seguridad: Si el usuario desconecta manualmente la billetera, limpiamos el localStorage de raíz
+  useEffect(() => {
     if (!connected) {
-      setVisible(true); // Abre la lista oficial de wallets de Solana
-    } else {
-      setShowDropdown(!showDropdown); // Muestra/Oculta las opciones de desconectar o cambiar
+      localStorage.removeItem('walletName');
+      // Forzamos al adaptador a olvidar la selección previa
+      select(null); 
     }
-  };
-
-  const handleDisconnectWallet = async () => {
-    await disconnect();
-    setShowDropdown(false);
-    localStorage.removeItem('walletName'); // Limpia el caché forzado para que no recuerde a Phantom
-  };
-
-  const handleChangeWallet = async () => {
-    await disconnect();
-    localStorage.removeItem('walletName'); // Limpia el caché
-    setShowDropdown(false);
-    setVisible(true); // Abre inmediatamente la lista para elegir otra
-  };
+  }, [connected, select]);
 
   return (
     <div style={{ backgroundColor: '#060b13', color: '#ffffff', minHeight: '100vh', fontFamily: 'sans-serif' }}>
@@ -163,7 +152,7 @@ function PresaleContent() {
       </div>
 
       {/* ENCABEZADO / NAVBAR */}
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 40px', maxWidth: '1200px', margin: '0 auto', position: 'relative' }}>
+      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 40px', maxWidth: '1200px', margin: '0 auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <img 
             src={LOGO_AURA_GOLD} 
@@ -173,80 +162,17 @@ function PresaleContent() {
           <span style={{ fontWeight: '900', fontSize: '24px', letterSpacing: '1px', color: '#fbbf24' }}>AURA GOLD</span>
         </div>
         
-        {/* CONTENEDOR DEL BOTÓN PERSONALIZADO */}
-        <div style={{ position: 'relative' }}>
-          <button 
-            onClick={handleConnectClick}
-            style={{ 
-              backgroundColor: connected ? '#10b981' : '#fbbf24', 
-              color: '#060b13', 
-              fontWeight: 'bold', 
-              borderRadius: '8px', 
-              border: 'none',
-              padding: '12px 18px',
-              fontSize: '14px',
-              cursor: 'pointer',
-              fontFamily: 'sans-serif'
-            }}
-          >
-            {connected && publicKey 
-              ? `🟢 ${publicKey.toBase58().slice(0, 4)}...${publicKey.toBase58().slice(-4)}` 
-              : 'Conectar Billetera'
-            }
-          </button>
-
-          {/* MENÚ DESPLEGABLE DE OPCIONES MANUALES */}
-          {connected && showDropdown && (
-            <div style={{ 
-              position: 'absolute', 
-              right: 0, 
-              top: '50px', 
-              backgroundColor: '#0f172a', 
-              border: '1px solid #1e293b', 
-              borderRadius: '8px', 
-              padding: '6px', 
-              zIndex: 100, 
-              minWidth: '160px',
-              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)'
-            }}>
-              <button 
-                onClick={handleChangeWallet}
-                style={{ 
-                  width: '100%', 
-                  backgroundColor: 'transparent', 
-                  color: '#fbbf24', 
-                  border: 'none', 
-                  textAlign: 'left', 
-                  padding: '10px', 
-                  cursor: 'pointer', 
-                  fontSize: '13px',
-                  fontWeight: 'bold'
-                }}
-                onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#1e293b'}
-                onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-              >
-                🔄 Cambiar Wallet
-              </button>
-              <button 
-                onClick={handleDisconnectWallet}
-                style={{ 
-                  width: '100%', 
-                  backgroundColor: 'transparent', 
-                  color: '#ef4444', 
-                  border: 'none', 
-                  textAlign: 'left', 
-                  padding: '10px', 
-                  cursor: 'pointer', 
-                  fontSize: '13px',
-                  fontWeight: 'bold'
-                }}
-                onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#1e293b'}
-                onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-              >
-                🚨 Desconectar Wallet
-              </button>
-            </div>
-          )}
+        <div>
+          {/* BOTÓN OFICIAL DE SOLANA CON COMPORTAMIENTO NATIVO REPARADO */}
+          <WalletMultiButton style={{ 
+            backgroundColor: connected ? '#10b981' : '#fbbf24', 
+            color: '#060b13', 
+            fontWeight: 'bold', 
+            borderRadius: '8px', 
+            fontFamily: 'sans-serif',
+            padding: '12px 24px',
+            fontSize: '14px'
+          }} />
         </div>
       </header>
 
@@ -328,7 +254,7 @@ function PresaleContent() {
   );
 }
 
-// COMPONENTE PRINCIPAL: Configura los proveedores globales de Solana
+// COMPONENTE PRINCIPAL (Configuración e inyección de contexto de Solana)
 export default function App() {
   const network = WalletAdapterNetwork.Mainnet;
   const endpoint = 'https://rpc.ankr.com/solana';
@@ -342,6 +268,7 @@ export default function App() {
     []
   );
 
+  // IMPORTANTE: Dejamos el flujo nativo desactivando autoConnect para dar libertad al usuario
   return (
     <ConnectionProvider endpoint={endpoint}>
       <WalletProvider wallets={wallets}>
