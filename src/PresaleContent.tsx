@@ -8,7 +8,7 @@ interface PresaleContentProps {
 }
 
 export default function PresaleContent({ rpcEndpoint }: PresaleContentProps) {
-  const { publicKey, sendTransaction, connected, select } = useWallet();
+  const { publicKey, sendTransaction, connected, select, disconnect } = useWallet();
   
   // Estados de carga e información financiera
   const [solPriceUsd, setSolPriceUsd] = useState<number>(140);
