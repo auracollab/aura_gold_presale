@@ -15,19 +15,19 @@ export default function PresaleContent({ rpcEndpoint }: PresaleContentProps) {
   const [loadingPrice, setLoadingPrice] = useState<boolean>(true);
   const [currency, setCurrency] = useState<'USDT' | 'SOL'>('SOL');
   const [argAmount, setArgAmount] = useState<string>('10000');
-  const [payAmount, setPayAmount] = useState<string>('100');
+  const [payAmount, setPayAmount] = useState<string>('1.4900');
 
-  // NOVEDAD FASE 2: Estados Blockchain en Vivo
+  // Estados Blockchain en Vivo (Fase 2)
   const [userSolBalance, setUserSolBalance] = useState<number | null>(null);
   const [treasurySolBalance, setTreasurySolBalance] = useState<number>(0);
-  const HARD_CAP_SOL = 500; // Meta de la Fase 1 de preventa (ejemplo: 500 SOL)
+  const HARD_CAP_SOL = 500; // Meta de la Fase 1 de preventa
 
   // Estados de Modales Internos
   const [txStatus, setTxStatus] = useState<'IDLE' | 'LOADING' | 'SUCCESS' | 'ERROR'>('IDLE');
   const [modalMessage, setModalMessage] = useState<string>('');
   const [lastSignature, setLastSignature] = useState<string>('');
 
-  // Configuración Constante
+  // Configuración Constante de Aura Gold
   const ARG_PRICE_USD = 0.01;
   const PRESALE_WALLET = new PublicKey('2NjhoA5TKiVKja9Gq8iPht5ya5Ho8yo2AEUbv37aGDTa');
   const MINT_ADDRESS = "22gYFgCNLcyRrLhrMtBSq3uwRhvfCA7wUGzG8QzCycqc";
@@ -54,17 +54,17 @@ export default function PresaleContent({ rpcEndpoint }: PresaleContentProps) {
     return () => clearInterval(interval);
   }, []);
 
-  // 2. NOVEDAD FASE 2: Lectura Dinámica de Saldos (Usuario y Tesorería)
+  // 2. Lectura Dinámica de Saldos RPC en Vivo
   useEffect(() => {
     const connection = new Connection(rpcEndpoint, 'confirmed');
 
     async function fetchBlockchainData() {
       try {
-        // Consultar balance acumulado en la billetera colectora (Fondo de Preventa)
+        // Consultar balance acumulado en la billetera colectora de preventa
         const treasuryBal = await connection.getBalance(PRESALE_WALLET);
         setTreasurySolBalance(treasuryBal / 1_000_000_000);
 
-        // Si el usuario está conectado, consultar su saldo actual en tiempo real
+        // Si el usuario está conectado, extraer su balance real de forma explícita
         if (connected && publicKey) {
           const userBal = await connection.getBalance(publicKey);
           setUserSolBalance(userBal / 1_000_000_000);
@@ -72,12 +72,12 @@ export default function PresaleContent({ rpcEndpoint }: PresaleContentProps) {
           setUserSolBalance(null);
         }
       } catch (err) {
-        console.error("Error leyendo datos RPC de la Blockchain:", err);
+        console.error("Error leyendo datos de la Blockchain:", err);
       }
     }
 
     fetchBlockchainData();
-    const interval = setInterval(fetchBlockchainData, 15000); // Actualiza cada 15 segs
+    const interval = setInterval(fetchBlockchainData, 12000); // Actualización veloz cada 12 segundos
     return () => clearInterval(interval);
   }, [connected, publicKey, rpcEndpoint]);
 
@@ -129,10 +129,10 @@ export default function PresaleContent({ rpcEndpoint }: PresaleContentProps) {
       return;
     }
 
-    // VALIDACIÓN PREVIA FASE 2: Evitar que intente enviar si no tiene saldo suficiente
+    // Validación preventiva de saldo
     if (userSolBalance !== null && parsedPay > userSolBalance) {
       setTxStatus('ERROR');
-      setModalMessage(`Saldo insuficiente. Intentas pagar ${parsedPay} SOL pero tu billetera dispone de ${userSolBalance.toFixed(4)} SOL.`);
+      setModalMessage(`Saldo insuficiente. Intentas transferir ${parsedPay} SOL pero tu billetera dispone de ${userSolBalance.toFixed(4)} SOL.`);
       return;
     }
 
@@ -202,7 +202,6 @@ export default function PresaleContent({ rpcEndpoint }: PresaleContentProps) {
     }
   };
 
-  // Calcular porcentaje de la barra de progreso de preventa
   const progressPercent = Math.min((treasurySolBalance / HARD_CAP_SOL) * 100, 100);
 
   return (
@@ -268,23 +267,22 @@ export default function PresaleContent({ rpcEndpoint }: PresaleContentProps) {
       {/* CUERPO CENTRAL */}
       <main style={{ maxWidth: '1100px', margin: '30px auto', padding: '0 20px', display: 'flex', flexWrap: 'wrap', gap: '40px', justifyContent: 'center' }}>
         
-        {/* COLUMNA IZQUIERDA: TEXTO, BARRA LIVE Y INFO */}
+        {/* COLUMNA IZQUIERDA: INFRAESTRUCTURA DE DATOS */}
         <div style={{ flex: '1 1 500px', alignSelf: 'center' }}>
           <h1 style={{ fontSize: '42px', fontWeight: '900', marginBottom: '16px', lineHeight: '1.2' }}>
             Portal Oficial de Preventa <br/>
             <span style={{ color: '#fbbf24', textShadow: '0 0 20px rgba(251,191,36,0.2)' }}>Aura Gold (ARG)</span>
           </h1>
           <p style={{ color: '#94a3b8', fontSize: '16px', marginBottom: '25px', lineHeight: '1.6' }}>
-            Asegura tus posiciones en la Fase ICO número 1. Tus fondos se procesan mediante contratos de custodia directa hacia la tesorería de resguardo oficial.
+            Adquiere tus tokens de forma directa y asegura tu posición antes del lanzamiento oficial en exchanges. Tus fondos se transfieren directamente a la tesorería de resguardo.
           </p>
 
-          {/* NOVEDAD FASE 2: BARRA DE PROGRESO DE RECAUDACIÓN EN VIVO (FOMO WIDGET) */}
+          {/* BARRA DE PROGRESO DE RECAUDACIÓN EN VIVO */}
           <div style={{ backgroundColor: '#090d16', border: '1px solid #1e293b', padding: '20px', borderRadius: '16px', marginBottom: '25px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '8px', fontWeight: 'bold' }}>
               <span style={{ color: '#38bdf8' }}>📈 Progreso de Recaudación:</span>
               <span style={{ color: '#fbbf24' }}>{treasurySolBalance.toFixed(2)} / {HARD_CAP_SOL} SOL</span>
             </div>
-            {/* Contenedor barra */}
             <div style={{ width: '100%', height: '12px', backgroundColor: '#1e293b', borderRadius: '6px', overflow: 'hidden' }}>
               <div style={{ width: `${progressPercent}%`, height: '100%', background: 'linear-gradient(90deg, #3b82f6, #10b981)', borderRadius: '6px', transition: 'width 1s ease-in-out' }}></div>
             </div>
@@ -293,7 +291,7 @@ export default function PresaleContent({ rpcEndpoint }: PresaleContentProps) {
 
           {/* TARJETA TOKENOMICS */}
           <div style={{ backgroundColor: '#0f172a', border: '1px solid rgba(251,191,36,0.15)', padding: '24px', borderRadius: '16px' }}>
-            <h3 style={{ margin: '0 0 16px 0', fontSize: '15px', color: '#fbbf24', fontWeight: 'bold', textTransform: 'uppercase' }}>📊 Distribución del Token</h3>
+            <h3 style={{ margin: '0 0 16px 0', fontSize: '15px', color: '#fbbf24', fontWeight: 'bold', textTransform: 'uppercase' }}>📊 Distribución del Token (Tokenomics)</h3>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '14px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><span style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#fbbf24' }}></span> Preventa: 40%</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><span style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#a78bfa' }}></span> Liquidez Raydium: 30%</div>
@@ -301,33 +299,25 @@ export default function PresaleContent({ rpcEndpoint }: PresaleContentProps) {
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><span style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#f43f5e' }}></span> Team Reserva: 15%</div>
             </div>
             <button onClick={watchARGToken} style={{ marginTop: '20px', width: '100%', backgroundColor: 'rgba(167, 139, 250, 0.1)', border: '1px solid #a78bfa', color: '#a78bfa', padding: '12px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' }}>
-              🦊 Importar ARG Token directo a mi Phantom
+              ℹ️ Importar ARG Token directo a mi Phantom
             </button>
           </div>
         </div>
 
-        {/* COLUMNA DERECHA: TARJETA DE COMPRA PREMIUM */}
+        {/* COLUMNA DERECHA: MÓDULO DE COMPRA */}
         <div style={{ flex: '1 1 420px', maxWidth: '460px' }}>
           <div style={{ 
             backgroundColor: '#0b1329', 
             border: '2px solid #fbbf24', 
             borderRadius: '24px', 
             padding: '35px', 
-            boxShadow: '0 0 30px rgba(251,191,36,0.15)',
-            position: 'relative'
+            boxShadow: '0 0 30px rgba(251,191,36,0.15)'
           }}>
-            {/* NOVEDAD FASE 2: VISUALIZACIÓN EN VIVO DEL SALDO DEL USUARIO */}
-            {connected && userSolBalance !== null && (
-              <div style={{ position: 'absolute', top: '15px', right: '25px', backgroundColor: 'rgba(16, 185, 129, 0.1)', padding: '4px 10px', borderRadius: '20px', border: '1px solid rgba(16,185,129,0.3)', fontSize: '11px', color: '#34d399', fontWeight: 'bold' }}>
-                Wallet Bal: {userSolBalance.toFixed(4)} SOL
-              </div>
-            )}
-
-            <h2 style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '25px', textAlign: 'center' }}>Módulo de Intercambio</h2>
+            <h2 style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '25px', textAlign: 'center' }}>Módulo de Compra</h2>
             
-            {/* SELECTOR ASSET */}
+            {/* SELECTOR MONEDA */}
             <div style={{ marginBottom: '24px' }}>
-              <label style={{ display: 'block', fontSize: '11px', color: '#64748b', marginBottom: '8px', fontWeight: 'bold' }}>SELECCIONA MONEDA DE PAGO:</label>
+              <label style={{ display: 'block', fontSize: '11px', color: '#64748b', marginBottom: '8px', fontWeight: 'bold' }}>SELECCIONA TU MONEDA:</label>
               <div style={{ display: 'flex', gap: '12px' }}>
                 <button onClick={() => setCurrency('USDT')} style={{ flex: 1, padding: '12px', borderRadius: '12px', fontWeight: 'bold', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', backgroundColor: currency === 'USDT' ? '#065f46' : '#1e293b', color: currency === 'USDT' ? '#34d399' : '#94a3b8' }}>
                   <img src={LOGO_USDT} style={{ width: '18px', height: '18px', borderRadius: '50%' }} alt="USDT" /> USDT
@@ -338,26 +328,36 @@ export default function PresaleContent({ rpcEndpoint }: PresaleContentProps) {
               </div>
             </div>
 
-            {/* INPUT TOKENS ARG DESEADOS */}
+            {/* INPUT TOKENS DESEADOS */}
             <div style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', fontSize: '11px', color: '#64748b', marginBottom: '8px', fontWeight: 'bold' }}>CANTIDAD DE ARG A RECIBIR:</label>
+              <label style={{ display: 'block', fontSize: '11px', color: '#64748b', marginBottom: '8px', fontWeight: 'bold' }}>CANTIDAD DE TOKENS ARG DESEADA:</label>
               <div style={{ position: 'relative' }}>
                 <input type="number" value={argAmount} onChange={(e) => setArgAmount(e.target.value)} style={{ width: '100%', backgroundColor: '#020617', border: '1px solid #334155', padding: '16px 50px 16px 16px', borderRadius: '12px', color: '#ffffff', fontSize: '18px', fontWeight: 'bold', boxSizing: 'border-box' }} />
                 <img src={LOGO_AURA_GOLD} style={{ position: 'absolute', right: '14px', top: '16px', width: '22px', height: '22px', borderRadius: '50%' }} alt="ARG" />
               </div>
             </div>
 
-            {/* INPUT MONEDA FIJO CALCULADO */}
+            {/* INPUT TOTAL ESTIMADO A PAGAR + SALDO FLOTANTE CORREGIDO */}
             <div style={{ marginBottom: '25px' }}>
-              <label style={{ display: 'block', fontSize: '11px', color: '#64748b', marginBottom: '8px', fontWeight: 'bold' }}>TOTAL ESTIMADO A PAGAR:</label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <label style={{ fontSize: '11px', color: '#64748b',尊fontWeight: 'bold' }}>TOTAL A PAGAR ({currency}):</label>
+                
+                {/* UBICACIÓN ESTRATÉGICA DEL SALDO: Se dibuja aquí de forma explícita al conectar */}
+                {connected && userSolBalance !== null && currency === 'SOL' && (
+                  <span style={{ backgroundColor: 'rgba(16, 185, 129, 0.15)', padding: '2px 8px', borderRadius: '6px', border: '1px solid rgba(16,185,129,0.4)', fontSize: '11px', color: '#34d399', fontWeight: 'bold' }}>
+                    Tu Saldo: {userSolBalance.toFixed(4)} SOL
+                  </span>
+                )}
+              </div>
+              
               <div style={{ position: 'relative' }}>
                 <input type="number" value={payAmount} onChange={(e) => handlePayChange(e.target.value)} style={{ width: '100%', backgroundColor: '#020617', border: '1px solid #334155', padding: '16px 50px 16px 16px', borderRadius: '12px', color: '#fbbf24', fontSize: '18px', fontWeight: 'bold', boxSizing: 'border-box' }} />
-                <img src={currency === 'SOL' ? LOGO_SOL : LOGO_USDT} style={{ position: 'absolute', right: '14px', top: '16px', width: '22px', height: '22px', borderRadius: '50%' }} alt="Pay Currency" />
+                <span style={{ position: 'absolute', right: '14px', top: '16px', fontSize: '14px', fontWeight: 'bold', color: '#64748b' }}>{currency}</span>
               </div>
-              <p style={{ margin: '8px 0 0 4px', fontSize: '11px', color: '#475569' }}>Ratio de Preventa Fijo: $0.01 USD por Token</p>
+              <p style={{ margin: '8px 0 0 4px', fontSize: '11px', color: '#475569' }}>Precio Unitario Fijo: $0.01 USD por ARG</p>
             </div>
 
-            {/* BOTÓN PRINCIPAL */}
+            {/* BOTÓN DE COMPRA */}
             <button onClick={handlePurchase} style={{ 
               width: '100%', 
               background: 'linear-gradient(90deg, #d97706 0%, #f59e0b 100%)', 
@@ -372,13 +372,13 @@ export default function PresaleContent({ rpcEndpoint }: PresaleContentProps) {
               letterSpacing: '1px',
               boxShadow: '0 4px 15px rgba(217,119,6,0.3)'
             }}>
-              {connected ? 'Adquirir Aura Gold' : 'Conecta tu Wallet'}
+              {connected ? 'Adquirir Tokens ARG' : 'Conecta tu Wallet'}
             </button>
           </div>
         </div>
       </main>
 
-      {/* MODAL INTEGRADO DE NOTIFICACIONES WEB3 */}
+      {/* MODAL INTEGRADO DE NOTIFICACIONES */}
       {txStatus !== 'IDLE' && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(2, 6, 23, 0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(6px)' }}>
           <div style={{ 
@@ -412,6 +412,17 @@ export default function PresaleContent({ rpcEndpoint }: PresaleContentProps) {
           </div>
         </div>
       )}
+
+      {/* DETALLES DE REGLAS ADICIONALES */}
+      <section style={{ maxWidth: '1100px', margin: '40px auto', padding: '0 20px' }}>
+        <div style={{ backgroundColor: 'rgba(15, 23, 42, 0.4)', border: '1px solid rgba(51, 65, 85, 0.3)', padding: '30px', borderRadius: '20px' }}>
+          <h4 style={{ margin: '0 0 14px 0', color: '#38bdf8', fontSize: '15px' }}>📢 Reglas de la Fase 1 y Distribución de Fondos</h4>
+          <ol style={{ margin: 0, paddingLeft: '20px', color: '#94a3b8', fontSize: '13px', lineHeight: '1.8' }}>
+            <li>Reserva en Tesorería: Al adquirir tus tokens, tus fondos en SOL se transfieren de forma directa y blindada a nuestra dirección de resguardo oficial. Tu billetera queda inmediatamente registrada en la lista de inversores iniciales.</li>
+            <li>Distribución Diferida (Airdrop): Los tokens ARG adquiridos serán enviados de forma masiva a las billeteras al finalizar el periodo de recaudación.</li>
+          </ol>
+        </div>
+      </section>
 
       {/* FOOTER */}
       <footer style={{ marginTop: '60px', borderTop: '1px solid rgba(51, 65, 85, 0.4)', padding: '30px 20px', textAlign: 'center' }}>
