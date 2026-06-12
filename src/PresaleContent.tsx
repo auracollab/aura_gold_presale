@@ -332,4 +332,92 @@ export default function PresaleContent({ rpcEndpoint }: PresaleContentProps) {
                 <button onClick={() => setCurrency('USDT')} style={{ flex: 1, padding: '12px', borderRadius: '12px', fontWeight: 'bold', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', backgroundColor: currency === 'USDT' ? '#065f46' : '#1e293b', color: currency === 'USDT' ? '#34d399' : '#94a3b8' }}>
                   <img src={LOGO_USDT} style={{ width: '18px', height: '18px', borderRadius: '50%' }} alt="USDT" /> USDT
                 </button>
-                <button onClick={() => setCurrency('SOL')} style={{ flex: 1, padding: '12px', borderRadius: '12px', fontWeight: 'bold', border: 'none', cursor
+                <button onClick={() => setCurrency('SOL')} style={{ flex: 1, padding: '12px', borderRadius: '12px', fontWeight: 'bold', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', backgroundColor: currency === 'SOL' ? '#4c1d95' : '#1e293b', color: currency === 'SOL' ? '#c084fc' : '#94a3b8' }}>
+                  <img src={LOGO_SOL} style={{ width: '18px', height: '18px', borderRadius: '50%' }} alt="SOL" /> SOL
+                </button>
+              </div>
+            </div>
+
+            {/* INPUT TOKENS ARG DESEADOS */}
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', fontSize: '11px', color: '#64748b', marginBottom: '8px', fontWeight: 'bold' }}>CANTIDAD DE ARG A RECIBIR:</label>
+              <div style={{ position: 'relative' }}>
+                <input type="number" value={argAmount} onChange={(e) => setArgAmount(e.target.value)} style={{ width: '100%', backgroundColor: '#020617', border: '1px solid #334155', padding: '16px 50px 16px 16px', borderRadius: '12px', color: '#ffffff', fontSize: '18px', fontWeight: 'bold', boxSizing: 'border-box' }} />
+                <img src={LOGO_AURA_GOLD} style={{ position: 'absolute', right: '14px', top: '16px', width: '22px', height: '22px', borderRadius: '50%' }} alt="ARG" />
+              </div>
+            </div>
+
+            {/* INPUT MONEDA FIJO CALCULADO */}
+            <div style={{ marginBottom: '25px' }}>
+              <label style={{ display: 'block', fontSize: '11px', color: '#64748b', marginBottom: '8px', fontWeight: 'bold' }}>TOTAL ESTIMADO A PAGAR:</label>
+              <div style={{ position: 'relative' }}>
+                <input type="number" value={payAmount} onChange={(e) => handlePayChange(e.target.value)} style={{ width: '100%', backgroundColor: '#020617', border: '1px solid #334155', padding: '16px 50px 16px 16px', borderRadius: '12px', color: '#fbbf24', fontSize: '18px', fontWeight: 'bold', boxSizing: 'border-box' }} />
+                <img src={currency === 'SOL' ? LOGO_SOL : LOGO_USDT} style={{ position: 'absolute', right: '14px', top: '16px', width: '22px', height: '22px', borderRadius: '50%' }} alt="Pay Currency" />
+              </div>
+              <p style={{ margin: '8px 0 0 4px', fontSize: '11px', color: '#475569' }}>Ratio de Preventa Fijo: $0.01 USD por Token</p>
+            </div>
+
+            {/* BOTÓN PRINCIPAL */}
+            <button onClick={handlePurchase} style={{ 
+              width: '100%', 
+              background: 'linear-gradient(90deg, #d97706 0%, #f59e0b 100%)', 
+              color: '#ffffff', 
+              border: 'none', 
+              padding: '18px', 
+              borderRadius: '14px', 
+              fontSize: '16px', 
+              fontWeight: 'extrabold', 
+              cursor: 'pointer',
+              textTransform: 'uppercase',
+              letterSpacing: '1px',
+              boxShadow: '0 4px 15px rgba(217,119,6,0.3)'
+            }}>
+              {connected ? 'Adquirir Aura Gold' : 'Conecta tu Wallet'}
+            </button>
+          </div>
+        </div>
+      </main>
+
+      {/* MODAL INTEGRADO DE NOTIFICACIONES WEB3 */}
+      {txStatus !== 'IDLE' && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(2, 6, 23, 0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(6px)' }}>
+          <div style={{ 
+            backgroundColor: '#0f172a', 
+            border: `2px solid ${txStatus === 'SUCCESS' ? '#10b981' : txStatus === 'ERROR' ? '#f43f5e' : '#fbbf24'}`, 
+            padding: '35px', 
+            borderRadius: '20px', 
+            maxWidth: '440px', 
+            width: '90%',
+            textAlign: 'center',
+            boxShadow: '0 10px 40px rgba(0,0,0,0.6)'
+          }}>
+            {txStatus === 'LOADING' && <h2 style={{ color: '#fbbf24', margin: '0 0 14px 0' }}>⏳ Procesando...</h2>}
+            {txStatus === 'SUCCESS' && <h2 style={{ color: '#10b981', margin: '0 0 14px 0' }}>🎉 ¡Reserva Exitosa!</h2>}
+            {txStatus === 'ERROR' && <h2 style={{ color: '#f43f5e', margin: '0 0 14px 0' }}>❌ Hubo un Problema</h2>}
+            
+            <p style={{ fontSize: '14px', color: '#cbd5e1', lineHeight: '1.6', margin: '0 0 20px 0' }}>{modalMessage}</p>
+            
+            {txStatus === 'SUCCESS' && lastSignature && (
+              <div style={{ backgroundColor: '#020617', padding: '12px', borderRadius: '8px', marginBottom: '20px', fontSize: '12px' }}>
+                <span style={{ color: '#64748b' }}>Firma Blockchain:</span><br/>
+                <code style={{ color: '#34d399', wordBreak: 'break-all' }}>{lastSignature}</code>
+              </div>
+            )}
+
+            {txStatus !== 'LOADING' && (
+              <button onClick={() => setTxStatus('IDLE')} style={{ backgroundColor: '#1e293b', border: '1px solid #334155', color: '#ffffff', padding: '10px 24px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
+                Entendido
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* FOOTER */}
+      <footer style={{ marginTop: '60px', borderTop: '1px solid rgba(51, 65, 85, 0.4)', padding: '30px 20px', textAlign: 'center' }}>
+        <p style={{ fontSize: '13px', color: '#475569', margin: '0 0 8px 0' }}>CONTRATO OFICIAL MINT ADDRESS (SOLANA MAINNET):</p>
+        <code style={{ fontSize: '12px', color: '#fbbf24', wordBreak: 'break-all' }}>{MINT_ADDRESS}</code>
+      </footer>
+    </div>
+  );
+}
