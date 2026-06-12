@@ -1,18 +1,18 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Connection, PublicKey, Transaction, SystemProgram } from '@solana/web3.js';
 
-// Importaciones del adaptador oficial de billeteras de Solana
+// Importaciones oficiales del ecosistema de Solana
 import { ConnectionProvider, WalletProvider, useWallet } from '@solana/wallet-adapter-react';
 import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
+import { PhantomWalletAdapter, SolflareWalletAdapter } from '@solana/wallet-adapter-wallets';
 import { WalletModalProvider, WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 
-// Importar los estilos del modal oficial de Solana
+// Estilos del modal oficial
 import '@solana/wallet-adapter-react-ui/styles.css';
 
-// Dirección real de la tesorería de la preventa (Mainnet)
+// Configuración de Red Absoluta (Nodo inmune al error 403 de Netlify)
+const NODE_RPC_ENDPOINT = 'https://rpc.ankr.com/solana';
 const PRESALE_WALLET = new PublicKey('2NjhoA5TKiVKja9Gq8iPht5ya5Ho8yo2AEUbv37aGDTa');
-
-// IMAGEN DE LOGO OFICIAL
 const LOGO_AURA_GOLD = "https://pbs.twimg.com/profile_images/2033415962737639425/Qynt9rO0_400x400.jpg";
 
 function PresaleContent() {
@@ -20,14 +20,13 @@ function PresaleContent() {
   const [solPriceUsd, setSolPriceUsd] = useState<number>(140); 
   const [loadingPrice, setLoadingPrice] = useState<boolean>(true);
   
-  // Estados de los campos de compra
   const [currency, setCurrency] = useState<'USDT' | 'SOL'>('SOL'); 
   const [argAmount, setArgAmount] = useState<string>('10000');
   const [payAmount, setPayAmount] = useState<string>('100');
 
   const ARG_PRICE_USD = 0.01; 
 
-  // 1. Obtener el precio de Solana en tiempo real
+  // 1. Monitoreo de precio en tiempo real
   useEffect(() => {
     async function fetchSolPrice() {
       try {
@@ -37,7 +36,7 @@ function PresaleContent() {
           setSolPriceUsd(data.solana.usd);
         }
       } catch (error) {
-        console.error("Error consultando el precio de SOL en vivo:", error);
+        console.error("Error consultando precio:", error);
       } finally {
         setLoadingPrice(false);
       }
@@ -47,7 +46,7 @@ function PresaleContent() {
     return () => clearInterval(interval);
   }, []);
 
-  // 2. Recalcular montos de conversión de manera bidireccional
+  // 2. Conversor bidireccional matemático
   useEffect(() => {
     const arg = parseFloat(argAmount);
     if (isNaN(arg) || arg <= 0) {
@@ -80,7 +79,7 @@ function PresaleContent() {
     }
   };
 
-  // 3. Procesamiento seguro de transacciones en Mainnet vía Ankr RPC Node
+  // 3. Ejecución segura de transacciones
   const handlePurchase = async () => {
     try {
       if (!connected || !publicKey) {
@@ -99,7 +98,8 @@ function PresaleContent() {
 
       alert(`Iniciando solicitud para adquirir ${argAmount} ARG. Se abrirá tu billetera seleccionada para autorizar el envío de ${parsedPay} SOL.`);
 
-      const connection = new Connection('https://rpc.ankr.com/solana', 'confirmed');
+      // Forzar la conexión estricta al nodo Ankr para traer el bloque más reciente sin bloqueos
+      const connection = new Connection(NODE_RPC_ENDPOINT, 'confirmed');
 
       const transaction = new Transaction().add(
         SystemProgram.transfer({
@@ -112,7 +112,7 @@ function PresaleContent() {
       const signature = await sendTransaction(transaction, connection);
 
       if (signature) {
-        alert(`🎉 ¡RESERVA EXITOSA!\n\nTu pago de ${parsedPay} SOL fue processed en Mainnet.\nID de Operación (Firma): ${signature.slice(0, 8)}...\n\nTu billetera ha sido registrada para recibir ${argAmount} ARG en la distribución de la Fase 1.`);
+        alert(`🎉 ¡RESERVA EXITOSA!\n\nTu pago de ${parsedPay} SOL fue procesado en Mainnet.\nID de Operación (Firma): ${signature.slice(0, 8)}...\n\nTu billetera ha sido registrada para recibir ${argAmount} ARG en la distribución de la Fase 1.`);
       }
     } catch (error: any) {
       console.error(error);
@@ -120,7 +120,7 @@ function PresaleContent() {
     }
   };
 
-  // 4. Hook de seguridad: Si se rompe o se quita la conexión, limpiamos rastros en el navegador
+  // 4. Limpiador de caché de sesión
   useEffect(() => {
     if (!connected) {
       localStorage.removeItem('walletName');
@@ -131,7 +131,7 @@ function PresaleContent() {
   return (
     <div style={{ backgroundColor: '#060b13', color: '#ffffff', minHeight: '100vh', fontFamily: 'sans-serif' }}>
       
-      {/* BANNER DE PRECIO EN TIEMPO REAL */}
+      {/* BANNER DE PRECIO */}
       <div style={{ backgroundColor: '#0d192d', borderBottom: '1px solid #1e293b', padding: '8px 20px', textAlign: 'center', fontSize: '14px' }}>
         {loadingPrice ? (
           <span style={{ color: '#94a3b8' }}>🔄 Sincronizando con Solana Mainnet...</span>
@@ -142,7 +142,7 @@ function PresaleContent() {
         )}
       </div>
 
-      {/* ENCABEZADO / NAVBAR */}
+      {/* NAVBAR */}
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 40px', maxWidth: '1200px', margin: '0 auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <img 
@@ -154,7 +154,6 @@ function PresaleContent() {
         </div>
         
         <div>
-          {/* BOTÓN NATIVO DE SOLANA */}
           <WalletMultiButton style={{ 
             backgroundColor: connected ? '#10b981' : '#fbbf24', 
             color: '#060b13', 
@@ -176,11 +175,11 @@ function PresaleContent() {
           Adquiere tus tokens de forma directa y asegura tu posición antes del lanzamiento oficial en exchanges.
         </p>
 
-        {/* CONTENEDOR MÓDULO DE COMPRA */}
+        {/* MODULO DE COMPRA */}
         <div style={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '16px', padding: '30px', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3)' }}>
           <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '24px', letterSpacing: '0.5px' }}>Módulo de Compra</h2>
           
-          {/* SELECTOR DE MONEDA */}
+          {/* SELECTOR MONEDA */}
           <div style={{ marginBottom: '24px' }}>
             <label style={{ display: 'block', fontSize: '12px', color: '#94a3b8', textAlign: 'left', marginBottom: '8px', fontWeight: 'bold', textTransform: 'uppercase' }}>Selecciona tu moneda:</label>
             <div style={{ display: 'flex', gap: '12px' }}>
@@ -193,13 +192,13 @@ function PresaleContent() {
             </div>
           </div>
 
-          {/* INPUT 1: CANTIDAD DE ARG */}
+          {/* ARG INPUT */}
           <div style={{ marginBottom: '20px', textAlign: 'left' }}>
             <label style={{ display: 'block', fontSize: '12px', color: '#94a3b8', marginBottom: '8px', fontWeight: 'bold', textTransform: 'uppercase' }}>Cantidad de tokens ARG deseada:</label>
             <input type="number" value={argAmount} onChange={(e) => setArgAmount(e.target.value)} placeholder="Ej: 10000" style={{ width: '100%', backgroundColor: '#060b13', border: '1px solid #1e293b', padding: '14px', borderRadius: '8px', color: '#ffffff', fontSize: '16px', boxSizing: 'border-box' }} />
           </div>
 
-          {/* INPUT 2: EQUIVALENTE A PAGAR */}
+          {/* PAGO INPUT */}
           <div style={{ marginBottom: '30px', textAlign: 'left' }}>
             <label style={{ display: 'block', fontSize: '12px', color: '#94a3b8', marginBottom: '8px', fontWeight: 'bold', textTransform: 'uppercase' }}>Total a pagar ({currency}):</label>
             <div style={{ position: 'relative' }}>
@@ -211,12 +210,12 @@ function PresaleContent() {
             </p>
           </div>
 
-          {/* BOTÓN DE COMPRA */}
+          {/* BOTON ADQUIRIR */}
           <button onClick={handlePurchase} style={{ width: '100%', backgroundColor: '#d97706', color: '#ffffff', border: 'none', padding: '16px', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.5px', transition: '0.2s' }} onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#b45309'} onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#d97706'}>
             Adquirir Tokens ARG
           </button>
 
-          {/* CUADRO DEL CONTRATO SOCIAL */}
+          {/* CUADRO INFORMATIVO */}
           <div style={{ marginTop: '24px', backgroundColor: '#0d192d', border: '1px solid #1d4ed8', padding: '20px', borderRadius: '12px', textAlign: 'left' }}>
             <h3 style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#38bdf8', fontWeight: 'bold' }}>
               📢 Reglas de la Fase 1 y Distribución de Fondos
@@ -230,7 +229,7 @@ function PresaleContent() {
           </div>
         </div>
 
-        {/* PIE DE PÁGINA */}
+        {/* FOOTER */}
         <footer style={{ marginTop: '50px', borderTop: '1px solid #1e293b', padding: '20px 0', display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <p style={{ fontSize: '14px', color: '#64748b', margin: 0 }}>MINT ADDRESS (CONTRATO OFICIAL DEL TOKEN):</p>
           <code style={{ fontSize: '12px', color: '#fbbf24', wordBreak: 'break-all', display: 'block', padding: '0 20px' }}>22gYFgCNLcyRrLhrMtBSq3uwRhvfCA7wUGzG8QzCycqc</code>
@@ -246,15 +245,17 @@ function PresaleContent() {
 }
 
 export default function App() {
-  const network = WalletAdapterNetwork.Mainnet;
-  const endpoint = 'https://rpc.ankr.com/solana';
-
-  // SOLUCIÓN: Arreglo vacío para activar el estándar nativo sin colisiones Web3
-  const wallets = useMemo(() => [], []);
+  const wallets = useMemo(
+    () => [
+      new PhantomWalletAdapter(),
+      new SolflareWalletAdapter(),
+    ],
+    []
+  );
 
   return (
-    <ConnectionProvider endpoint={endpoint}>
-      <WalletProvider wallets={wallets}>
+    <ConnectionProvider endpoint={NODE_RPC_ENDPOINT}>
+      <WalletProvider wallets={wallets} autoConnect={false}>
         <WalletModalProvider>
           <PresaleContent />
         </WalletModalProvider>
