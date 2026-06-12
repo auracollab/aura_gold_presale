@@ -4,7 +4,6 @@ import { Connection, PublicKey, Transaction, SystemProgram } from '@solana/web3.
 // Importaciones del adaptador oficial de billeteras de Solana
 import { ConnectionProvider, WalletProvider, useWallet } from '@solana/wallet-adapter-react';
 import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
-import { PhantomWalletAdapter, SolflareWalletAdapter, TorusWalletAdapter } from '@solana/wallet-adapter-wallets';
 import { WalletModalProvider, WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 
 // Importar los estilos del modal oficial de Solana
@@ -16,10 +15,9 @@ const PRESALE_WALLET = new PublicKey('2NjhoA5TKiVKja9Gq8iPht5ya5Ho8yo2AEUbv37aGD
 // IMAGEN DE LOGO OFICIAL
 const LOGO_AURA_GOLD = "https://pbs.twimg.com/profile_images/2033415962737639425/Qynt9rO0_400x400.jpg";
 
-// Componente Interno con la lógica de negocio y UI
 function PresaleContent() {
-  const { publicKey, sendTransaction, connected, disconnect, select } = useWallet();
-  const [solPriceUsd, setSolPriceUsd] = useState<number>(140); // Precio base por defecto
+  const { publicKey, sendTransaction, connected, select } = useWallet();
+  const [solPriceUsd, setSolPriceUsd] = useState<number>(140); 
   const [loadingPrice, setLoadingPrice] = useState<boolean>(true);
   
   // Estados de los campos de compra
@@ -27,9 +25,9 @@ function PresaleContent() {
   const [argAmount, setArgAmount] = useState<string>('10000');
   const [payAmount, setPayAmount] = useState<string>('100');
 
-  const ARG_PRICE_USD = 0.01; // Precio fijo por token ARG
+  const ARG_PRICE_USD = 0.01; 
 
-  // 1. Obtener el precio de Solana en tiempo real (Coingecko)
+  // 1. Obtener el precio de Solana en tiempo real
   useEffect(() => {
     async function fetchSolPrice() {
       try {
@@ -56,9 +54,7 @@ function PresaleContent() {
       setPayAmount('');
       return;
     }
-
     const totalCostUsd = arg * ARG_PRICE_USD;
-
     if (currency === 'USDT') {
       setPayAmount(totalCostUsd.toFixed(2));
     } else {
@@ -74,7 +70,6 @@ function PresaleContent() {
       setArgAmount('');
       return;
     }
-
     if (currency === 'USDT') {
       const totalArg = pay / ARG_PRICE_USD;
       setArgAmount(totalArg.toFixed(0));
@@ -92,12 +87,10 @@ function PresaleContent() {
         alert('Por favor, conecta tu billetera primero usando el botón superior.');
         return;
       }
-
       if (currency === 'USDT') {
         alert('La recepción directa de USDT está temporalmente en mantenimiento técnico para optimizar los gas fees. Por favor, selecciona SOL para realizar tu adquisición de tokens en esta Fase 1.');
         return;
       }
-
       const parsedPay = parseFloat(payAmount);
       if (isNaN(parsedPay) || parsedPay <= 0) {
         alert('Monto de compra inválido.');
@@ -106,7 +99,6 @@ function PresaleContent() {
 
       alert(`Iniciando solicitud para adquirir ${argAmount} ARG. Se abrirá tu billetera seleccionada para autorizar el envío de ${parsedPay} SOL.`);
 
-      // Endpoint inmune al error 403 de Netlify
       const connection = new Connection('https://rpc.ankr.com/solana', 'confirmed');
 
       const transaction = new Transaction().add(
@@ -120,7 +112,7 @@ function PresaleContent() {
       const signature = await sendTransaction(transaction, connection);
 
       if (signature) {
-        alert(`🎉 ¡RESERVA EXITOSA!\n\nTu pago de ${parsedPay} SOL fue procesado en Mainnet.\nID de Operación (Firma): ${signature.slice(0, 8)}...\n\nTu billetera ha sido registrada para recibir ${argAmount} ARG en la distribución de la Fase 1.`);
+        alert(`🎉 ¡RESERVA EXITOSA!\n\nTu pago de ${parsedPay} SOL fue processed en Mainnet.\nID de Operación (Firma): ${signature.slice(0, 8)}...\n\nTu billetera ha sido registrada para recibir ${argAmount} ARG en la distribución de la Fase 1.`);
       }
     } catch (error: any) {
       console.error(error);
@@ -128,11 +120,10 @@ function PresaleContent() {
     }
   };
 
-  // 4. Hook de seguridad: Si el usuario desconecta manualmente la billetera, limpiamos el localStorage de raíz
+  // 4. Hook de seguridad: Si se rompe o se quita la conexión, limpiamos rastros en el navegador
   useEffect(() => {
     if (!connected) {
       localStorage.removeItem('walletName');
-      // Forzamos al adaptador a olvidar la selección previa
       select(null); 
     }
   }, [connected, select]);
@@ -163,7 +154,7 @@ function PresaleContent() {
         </div>
         
         <div>
-          {/* BOTÓN OFICIAL DE SOLANA CON COMPORTAMIENTO NATIVO REPARADO */}
+          {/* BOTÓN NATIVO DE SOLANA */}
           <WalletMultiButton style={{ 
             backgroundColor: connected ? '#10b981' : '#fbbf24', 
             color: '#060b13', 
@@ -254,21 +245,13 @@ function PresaleContent() {
   );
 }
 
-// COMPONENTE PRINCIPAL (Configuración e inyección de contexto de Solana)
 export default function App() {
   const network = WalletAdapterNetwork.Mainnet;
   const endpoint = 'https://rpc.ankr.com/solana';
 
-  const wallets = useMemo(
-    () => [
-      new PhantomWalletAdapter(),
-      new SolflareWalletAdapter(),
-      new TorusWalletAdapter(),
-    ],
-    []
-  );
+  // SOLUCIÓN: Arreglo vacío para activar el estándar nativo sin colisiones Web3
+  const wallets = useMemo(() => [], []);
 
-  // IMPORTANTE: Dejamos el flujo nativo desactivando autoConnect para dar libertad al usuario
   return (
     <ConnectionProvider endpoint={endpoint}>
       <WalletProvider wallets={wallets}>
