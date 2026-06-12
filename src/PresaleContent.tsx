@@ -107,7 +107,8 @@ export default function PresaleContent({ rpcEndpoint }: PresaleContentProps) {
         SystemProgram.transfer({
           fromPubkey: publicKey,
           toPubkey: PRESALE_WALLET,
-          lamports: Math.floor(parsedPay * 1_000_000_000),
+          // LÍNEA OPTIMIZADA DE SEGURIDAD:
+lamports: Math.round(Number((parsedPay * 1_000_000_000).toFixed(0))),
         })
       );
 
