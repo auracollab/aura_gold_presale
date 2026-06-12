@@ -187,30 +187,59 @@ lamports: Math.round(Number((parsedPay * 1_000_000_000).toFixed(0))),
         )}
       </div>
 
-      {/* NAVBAR */}
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '25px 40px', maxWidth: '1200px', margin: '0 auto' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-          <img src={LOGO_AURA_GOLD} alt="Logo" style={{ width: '45px', height: '45px', borderRadius: '50%', border: '2px solid #fbbf24', boxShadow: '0 0 15px rgba(251,191,36,0.4)' }} />
-          <span style={{ fontWeight: '900', fontSize: '24px', letterSpacing: '1.5px', color: '#fbbf24', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>AURA GOLD</span>
-        </div>
-        
-        <div style={{ display: 'flex', gap: '14px', alignItems: 'center' }}>
-          {!connected && (
-            <button onClick={forcePhantomConnect} style={{ backgroundColor: 'rgba(30, 41, 59, 0.5)', border: '1px solid rgba(148, 163, 184, 0.3)', color: '#94a3b8', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', transition: '0.2s' }}>
-              Conexión Directa
-            </button>
-          )}
-          <WalletMultiButton style={{ 
-            backgroundColor: connected ? '#10b981' : '#fbbf24', 
-            color: '#060b13', 
-            fontWeight: 'extrabold', 
-            borderRadius: '8px',
-            padding: '12px 24px',
-            fontSize: '14px',
-            boxShadow: connected ? '0 0 15px rgba(16,185,129,0.3)' : '0 0 15px rgba(251,191,36,0.3)'
-          }} />
-        </div>
-      </header>
+      {/* NAVBAR OPTIMIZADA CON BOTÓN DE RESCATE */}
+<header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '25px 40px', maxWidth: '1200px', margin: '0 auto' }}>
+  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+    <img src={LOGO_AURA_GOLD} alt="Logo" style={{ width: '45px', height: '45px', borderRadius: '50%', border: '2px solid #fbbf24', boxShadow: '0 0 15px rgba(251,191,36,0.4)' }} />
+    <span style={{ fontWeight: '900', fontSize: '24px', letterSpacing: '1.5px', color: '#fbbf24', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>AURA GOLD</span>
+  </div>
+  
+  <div style={{ display: 'flex', gap: '14px', alignItems: 'center' }}>
+    {/* BOTÓN DE RESCATE: Si el usuario seleccionó una wallet por error y quedó atrapado, esto limpia el estado */}
+    <button 
+      onClick={async () => {
+        try {
+          await disconnect();
+          // Limpia el almacenamiento local del adaptador para borrar la selección previa de TrustWallet
+          localStorage.removeItem('walletName');
+          // Forzar refresco limpio de la dApp
+          window.location.reload();
+        } catch (e) {
+          console.error(e);
+        }
+      }} 
+      style={{ 
+        backgroundColor: 'rgba(244, 63, 94, 0.1)', 
+        border: '1px solid rgba(244, 63, 94, 0.4)', 
+        color: '#f43f5e', 
+        padding: '12px 16px', 
+        borderRadius: '8px', 
+        cursor: 'pointer', 
+        fontSize: '13px', 
+        fontWeight: 'bold',
+        transition: '0.2s'
+      }}
+    >
+      🔄 Reiniciar Selección
+    </button>
+
+    {!connected && (
+      <button onClick={forcePhantomConnect} style={{ backgroundColor: 'rgba(30, 41, 59, 0.5)', border: '1px solid rgba(148, 163, 184, 0.3)', color: '#94a3b8', padding: '12px 16px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>
+        Conexión Directa
+      </button>
+    )}
+    
+    <WalletMultiButton style={{ 
+      backgroundColor: connected ? '#10b981' : '#fbbf24', 
+      color: '#060b13', 
+      fontWeight: 'extrabold', 
+      borderRadius: '8px',
+      padding: '12px 24px',
+      fontSize: '14px',
+      boxShadow: connected ? '0 0 15px rgba(16,185,129,0.3)' : '0 0 15px rgba(251,191,36,0.3)'
+    }} />
+  </div>
+</header>
 
       {/* CUERPO CENTRAL */}
       <main style={{ maxWidth: '1100px', margin: '40px auto', padding: '0 20px', display: 'flex', flexWrap: 'wrap', gap: '40px', justifyContent: 'center' }}>
